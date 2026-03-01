@@ -64,4 +64,57 @@ int main()
 ## 2.在不改变const对象的操作中还有一种是初始化，利用一个对象区初始化另一个对象，是不是const都无所谓
 ## 3.默认状态下，const对象仅在文件内有效：
 ## 4.如果需要在其他文件使用，需要加上extern关键字
+## 引用：一种更安全的指针，引用必须初始化，指针不一定要初始化，但是最好指向空指针
+### 1.引用的使用：
+```C++
+//引用的定义
+int a =10;
+int &b =a;
+int array[5]={};
+int *p =array; 
+int (&q)[]=array;
+```
+```C++
+//1.左值引用和右值引用
+void swap_by_pointer(int* a, int* b)
+{
+      int tmp =0;
+      tmp =*a;
+      *a =*b;
+      *b =tmp;    
+}
+void swap_by_quoted(int &a,int &b)
+{
+      int tmp= 0;
+      tmp =a;
+      a=b;
+      b=tmp;
+}
+int main()
+{
+      int a =10;
+      int b =50;
+      //int *p = &a;
+      //int &b =a;
+      //*p = 20;
+      //cout << a << *p << b <<endl;
+      //b =30;
+      //cout << a << *p << b <<endl;
+      //以上说明a *p b 都是在描述同一块内存
+      cout << a << b <<endl;
+      swap_by_pointer(&a,&b);
+      cout << a << b <<endl;
+      a=68;
+      b=98;
+      cout << a << b <<endl;
+      swap_by_quoted(a,b);
+      cout << a << b <<endl;
+      return 0;
+}
+```
+### 2.引用和指针的区别：
+#### 引用和指针在汇编命令层面的命令是一样的
+#### 引用只有一级引用
+### 3.引用的优势
+
 
