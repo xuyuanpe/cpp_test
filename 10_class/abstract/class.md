@@ -78,6 +78,11 @@ void cgood::show()
 }
 int main()
 {
+	//如何计算类的内存大小----类的大小只和成员变量有关，和成员方法无关
+	//内存计算先找占用最长字节的变量，然后根据编译器的对齐方式排列，最后计算出来
+
+	//一个类可以定义无数个对象，每个对象都有自己的成员变量，但是他们共享一套成员方法
+	//	
 	cgood good;//实例化一个对象
 	good.init("面包", 100.5, 100);
 	good.show();
@@ -88,9 +93,31 @@ int main()
 ```c++
 
 ```
+```c++
+//oop编程实现顺序栈
+class seqstack
+{
+public:
+	void init(int size =10)
+	{
+		_pstack =new int[size];
+		_top =-1;
+		_size =size;
+	}
+	void release()
+	{
+		delete []_pstack;//释放数组空间要加[]
+		_pstack =nullptr;
+	}
+private:
+	int *_pstack;//动态开辟数组，存储顺序栈的元素
+	int _top;//指向栈顶元素的位置
+	int _size;//数组扩容的总大小
+};
+```
 ### 3.this指针
 ```c++
-
+//编译器隐式的区分出来成员方法是被哪个对象调用的，在方法传参的时候，会有一个该对象类型的this指针来接收该对象的地址，由此可以使用this->xxx,来表示某对象的成员方法
 ```
 ### 4.对象数组
 ```c++
