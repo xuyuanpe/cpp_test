@@ -41,7 +41,48 @@ int *p =new(&data)int(40);//在指定位置开辟空间
 ## 3.类和对象：
 ### 1.抽象和类
 ```c++
+#include <iostream>
+using namespace std;
+const int NAME_LENGTH = 20;
+class cgood
+{
+private://私有的成员变量
+	char _name[NAME_LENGTH];
+	double _price;
+	int _amount;
 
+public://共有的成员函数
+	void init(const char* name, double price, int amount);//常量字符串不允许用普通指针来接收
+	void show();
+	void setName(char* name) { strcpy_s(_name, name); }//类体内实现的函数，自动处理成内联函数
+	void setPrice(double price) { _price = price; }
+	void setAmount(int amount) { _amount = amount; }
+	const char* getName() { return _name; }
+	double getPrice() { return _price; }
+	int getAmount() { return _amount; }
+
+};
+//类外定义：想要处理成内联函数需要加上关键字inline
+void cgood::init(const char* name, double price, int amount)//方法前面要加上类的作用域（返回值后面，函数名前面）
+{
+	strcpy_s(_name, name);//strcpy不安全
+	_price = price;
+	_amount = amount;
+
+}
+void cgood::show()
+{
+	cout << "name:" << _name << endl;
+	cout << "price:" << _price << endl;
+	cout << "amount:" << _amount << endl;
+}
+int main()
+{
+	cgood good;//实例化一个对象
+	good.init("面包", 100.5, 100);
+	good.show();
+	return 0;
+}
 ```
 ### 2.构造函数和析构函数
 ```c++
