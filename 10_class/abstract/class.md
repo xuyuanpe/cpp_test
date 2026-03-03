@@ -38,7 +38,7 @@ int data =0;
 int *p =new(&data)int(40);//在指定位置开辟空间
 
 ```
-## 3.类和对象：
+## 3.类和对象：（对象是一个逻辑上的概念）
 ### 1.抽象和类
 ```c++
 #include <iostream>
@@ -93,6 +93,10 @@ int main()
 ```c++
 //1.内存的初始化和释放在顺序栈中时手动操作的，很有可能一不注意就漏掉了，所以我们引入了构造函数和析构函数
 //2.函数的名字和类名相同，没有返回值
+//3.先构造的后析构，后构造的先析构---因为在栈上
+//4.析构函数不带参数，所以析构函数只能有一个，构造函数可以重载（重载和返回值没有关系，c++的重载只和函数名和参数列表有关）
+//5.析构函数可以自己调用，调用完对象也就不存在了，堆内存已经释放了，这个时候调用方法在语法上没有问题，但是已经是堆内存的非法访问了
+//6.全局对象在程序结束的时候才析构
 class seqstack
 {
 public:
@@ -145,6 +149,14 @@ private:
 	}
 };
 ```
+```C++
+SeqStack *ps = new SeqStack(60);
+    ps->push(70);
+    ps->push(80);
+    ps->pop();
+    cout << ps->top() << endl;
+    delete ps;//需要手动释放 delete先调用析构函数释放堆内存 然后free（ps）
+```
 ```c++
 //oop编程实现顺序栈
 class seqstack
@@ -161,6 +173,107 @@ public:
 		delete []_pstack;//释放数组空间要加[]
 		_pstack =nullptr;
 	}
+    void push(int val)
+    {
+        if(full())
+        {
+            resize();
+        }
+        _pstack[++_top]=val;//先自增，再赋值
+    }
+    void pop()
+    {
+        if(empty())
+        {
+            return;
+        }
+		--_top;
+    }
+	int top(){return _pstack[_top];}//返回栈顶
+	bool empty(){return _top==-1;}//判空
+	bool full(){return _top==_size-1;}//判满
+private:
+	int *_pstack;//动态开辟数组，存储顺序栈的元素
+	int _top;//指向栈顶元素的位置
+	int _size;//数组扩容的总大小
+	void resize()//类成员方法不希望外部调用
+	{
+		int *ptmp =new int[_size*2];
+		for(int i =0;i<_size;++i)
+		{
+			ptmp[i]=_pstack[i];
+		}//memecpy(ptmp,_pstack,sizeof(int)*_size))/realloc都是内存拷贝---涉及到深拷贝和浅拷贝
+		_pstack =ptmp;
+		_size *=2;
+	}
+};
+```
+#### 对象的深拷贝和浅拷贝
+```c++
+seqstack s;//会生成默认构造函数和析构函数，空函数，什么也不做
+seqstack s1(10);//调用一个带整型参数的构造函数
+seqstack s2 =s1;//由一个已经存在的栈对象，来构造一个栈对象--拷贝构造函数
+//1.浅拷贝（不占用外部资源的情况下是没问题的）
+//后构造的先析构，s2和s1指向同一个堆内存，但s2析构时先把那块内存释放了，导致s1指向成为了野指针，会运行终止
+//导致这种情况的原因是对象的成员变量中有指针，并且指向了对象之外的内存（外部资源）---发生浅拷贝--同一个资源释放两次
+//对象默认的拷贝构造是做内存的数据拷贝，也就是成员变量的拷贝，导致拷贝的变量中的指针指向和原对象相同
+seqstack s3(s1);//拷贝构造函数，同上
+
+//2. 深拷贝（不止拷贝一份成员变量，如果变量指向外部资源，那么也要单独开辟一段内存来拷贝一份外部资源，使拷贝对象的成员变量指向拷贝的外部资源）
+//这样析构的时候各自析构自己指向的堆内存，互不干扰
+```
+```c++
+//自定义拷贝构造函数（深拷贝）
+class seqstack
+{
+public:
+	seqstack(int size =10)//构造函数
+	{
+		cout <<this << "seqstack()"<<endl;
+		_pstack =new int[size];
+		_top =-1;
+		_size =size;
+	}
+	seqstack(const seqstack & src)//成员变量指向外部资源，不能使用默认构造函数的析构函数进行拷贝
+	{
+		//_pstack=src._pstack;//浅拷贝
+		_pstack =new int [src._size];//复制一份外部资源，让_pstack指向新开辟的堆内存
+		for(int i =0;i<=src._top;++i)
+		{
+			_pstack[i]=src._pstack[i];
+		}
+		//为什么深拷贝使用for循环而不是memcpy：这里的拷贝数据是整型，所以都能用，是浅拷贝，但是没有问题
+		//如果要拷贝的内容不是一个个整型，而是一个个对象，并且其中的指针变量还访问了外部资源，那就不能直接使用memcpy
+		//memcpy和realloc都是浅拷贝
+		//赋值操作：s2 = s1 如果我们没有给类提供赋值操作，那么会成为默认赋值操作---直接的内存拷贝，浅拷贝：
+		//s2.operator=(s1);void operator=(const seqstack &src);没有实现
+		_top =src._top;
+		_size =src._size;
+	}
+	void operator=(const seqstack &src)//赋值重载函数
+	{
+		cout << "operator"<<endl;
+		if(this==&src)//防止自己给自己赋值
+		{
+			return ;
+		}
+		delete[]_pstack;//需要先释放当前对象占用的外部资源
+		_pstack =new int [src._size];//复制一份外部资源，让_pstack指向新开辟的堆内存
+		for(int i =0;i<=src._top;++i)
+		{
+			_pstack[i]=src._pstack[i];
+		}
+		_top =src._top;
+		_size =src._size;
+	}
+	
+	~seqstack()//析构函数
+	{
+		cout <<this << "~seqstack()"<<endl;
+		delete []_pstack;//释放数组空间要加[]
+		_pstack =nullptr;
+	}
+	
     void push(int val)
     {
         if(full())
