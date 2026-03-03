@@ -309,6 +309,119 @@ private:
 	}
 };
 ```
+#### 构造函数的初始化列表
+```C++
+//初始化顺序，先被声明的先被初始化
+//成员变量的初始化和声明顺序有关，和在构造函数列表中的出现顺序无关
+#include <iostream>
+using namespace std;
+
+class Test
+{
+public:
+    Test(int data = 10) : mb(data), ma(mb) {}
+    void show() { cout << "ma:" << ma << " mb:" << mb << endl; }
+private:
+    int ma;
+    int mb;
+};
+
+int main()
+{
+    Test t;
+    t.show();
+    return 0;
+}
+//ma先声明，所以先被赋值，此时mb是随机值，然后是mb=data，所以结果是ma=未知，mb=10
+```
+```C++
+//cgood(const char* name, double price, int amount,int y,int m,int d):_date(y,m,d),_price(price),_amount(amount)
+//构造函数的初始化列表:可以指定当前对象成员的初始化方式
+//cdate 是cgood的一部分 组合
+
+
+#include <iostream>
+using namespace std;
+const int NAME_LENGTH = 20;
+class cdate
+{
+public:
+	cdate(int y, int m, int d)
+	{
+		_year = y;
+		_month = m;
+		_day = d;
+	}
+	void showdate()
+	{
+		cout << _year << "/" << _month << "/"<<_day << endl;
+	}
+private:
+	int _year;
+	int _month;
+	int _day;
+
+};
+class cgood
+{
+private://私有的成员变量
+	char _name[NAME_LENGTH];
+	double _price;
+	int _amount;
+	cdate _date;//成员对象---如何把年月日的信息传递给_date
+
+public://共有的成员函数
+	void init(const char* name, double price, int amount);//常量字符串不允许用普通指针来接收
+	//添加构造函数：
+	cgood(const char* name, double price, int amount,int y,int m,int d)
+		:_date(y,m,d)
+		,_price(price)
+		,_amount(amount)// 构造函数的初始化列表,也可以进行简单的赋值
+		//指定成员对象的构造方式
+		//当前类类型构造函数体
+	{
+		strcpy_s(_name, name);//这种就放在函数体中
+		
+	}
+	void show();
+	void setName(char* name) { strcpy_s(_name, name); }//类体内实现的函数，自动处理成内联函数
+	void setPrice(double price) { _price = price; }
+	void setAmount(int amount) { _amount = amount; }
+	const char* getName() { return _name; }
+	double getPrice() { return _price; }
+	int getAmount() { return _amount; }
+
+};
+//类外定义：想要处理成内联函数需要加上关键字inline
+void cgood::init(const char* name, double price, int amount)//方法前面要加上类的作用域（返回值后面，函数名前面）
+{
+	strcpy_s(_name, name);//strcpy不安全
+	_price = price;
+	_amount = amount;
+
+}
+void cgood::show()
+{
+	cout << "name:" << _name << endl;
+	cout << "price:" << _price << endl;
+	cout << "amount:" << _amount << endl;
+	_date.showdate();
+}
+int main()
+{
+	//如何计算类的内存大小----类的大小只和成员变量有关，和成员方法无关
+	//内存计算先找占用最长字节的变量，然后根据编译器的对齐方式排列，最后计算出来
+
+	//一个类可以定义无数个对象，每个对象都有自己的成员变量，但是他们共享一套成员方法
+	//	
+	//cgood good();//实例化一个对象
+	//good.init("面包", 100.5, 100);
+	//good.show();
+	cgood g("xigua",10.0,10,2021,10,12);
+	g.show();
+	return 0;
+}
+```
 ### 3.this指针
 ```c++
 //编译器隐式的区分出来成员方法是被哪个对象调用的，在方法传参的时候，会有一个该对象类型的this指针来接收该对象的地址，由此可以使用this->xxx,来表示某对象的成员方法
@@ -324,6 +437,10 @@ private:
 ### 6.抽象数据类型
 ```c++
 
+```
+### 7.类的各种成员方法以及区别
+```C++
+//
 ```
 ## 4.使用类：
 ### 1.运算符重载
