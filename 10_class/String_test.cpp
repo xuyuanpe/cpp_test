@@ -14,6 +14,38 @@ public:
         _front = _rear = 0;
         _size = size;
     }
+    //delete
+    //queue(const queue& other)=delete;
+    //queue& operator=(const queue&) =delete; //这样使用拷贝构造函数和赋值重载函数就会报错
+    //拷贝构造函数
+    queue(const queue& other)
+    {
+        
+        _front =other._front;
+        _rear =other._rear;
+        _size =other._size;
+        _pqueue =new int [_size];
+        for(int i =_front;i!=_rear;i=(i+1)%_size)
+        {
+            _pqueue[i]=other._pqueue[i];
+        }
+    }
+    //赋值重载函数
+    queue& operator=(const queue & other)
+    {
+        if(this == &other)
+        return *this;
+        delete[]_pqueue;
+        _front =other._front;
+        _rear =other._rear;
+        _size =other._size;
+        _pqueue =new int [_size];
+        for(int i =_front;i!=_rear;i=(i+1)%_size)
+        {
+            _pqueue[i]=other._pqueue[i];
+        }
+        return *this;
+    }
     //析构函数
     ~queue(void)
     {
@@ -151,5 +183,7 @@ int main()
         q.pop();
     }
     cout << endl;
+    queue q2 =q;
+    q2 =q;
     return 0;
 }
