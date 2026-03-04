@@ -439,8 +439,189 @@ int main()
 
 ```
 ### 7.类的各种成员方法以及区别
+#### 1.静态成员和静态方法
+#### 2.常对象调用不了普通方法--相对于const *this== *this 所以要给普通方法后缀加上const变为常成员方法
+#### 3.如果常成员方法中还调用了普通方法 那也要把那个方法改为常成员方法
+#### 4.只要是只读操作的方法 一律实现成const 常成员方法 这样普通对象可以调用 常对象也可以调用
 ```C++
-//
+//类的成员----成员方法/变量
+//普通的成员方法=====》this形参
+//1.属于类的作用域
+//2.成员方法的调用依赖于对象
+//3.可以访问对象的私有变量
+//静态成员和静态成员方法=====》不产生this形参
+//4.在类中添加一个int count 用来记录商品的总数量---普通的成员变量只能描述一个对象的信息---在构造函数中调用，保证每一次生成对象都会使其值变动
+//5.所以可以使用静态成员变量：静态成员变量不纳入类内存--对象在栈中，静态成员变量在数据段中---计算对象大小不考虑静态成员变量
+//6.同理我们想不通过对象调用方法，而是通过类名调用，就需要把普通成员方法写成静态成员方法
+//7.静态方法无法访问普通的成员变量（因为静态方法没有产生this指针，无法接收对象地址，也不知道访问哪个对象）只能访问不依赖对象的成员变量
+
+#include <iostream>
+using namespace std;
+const int NAME_LENGTH = 20;
+class cdate
+{
+public:
+	cdate(int y, int m, int d)
+	{
+		_year = y;
+		_month = m;
+		_day = d;
+	}
+	void showdate()const
+	{
+		cout << _year << "/" << _month << "/" << _day << endl;
+	}
+private:
+	int _year;
+	int _month;
+	int _day;
+
+};
+class cgood
+{
+private://私有的成员变量
+	char _name[NAME_LENGTH];
+	double _price;
+	int _amount;
+	cdate _date;//成员对象---如何把年月日的信息传递给_date
+	static  int _count;//声明一个静态成员变量，用于给商品计数
+
+public://共有的成员函数
+	void init(const char* name, double price, int amount);//常量字符串不允许用普通指针来接收
+	//添加构造函数：
+	cgood(const char* name, double price, int amount, int y, int m, int d)
+		:_date(y, m, d)
+		, _price(price)
+		, _amount(amount)// 构造函数的初始化列表,也可以进行简单的赋值
+		//指定成员对象的构造方式
+		//当前类类型构造函数体
+	{
+		strcpy_s(_name, name);//这种就放在函数体中
+		_count++;
+
+	}
+	void show();
+	
+	void show()const;
+	
+	void setName(char* name) { strcpy_s(_name, name); }//类体内实现的函数，自动处理成内联函数
+	void setPrice(double price) { _price = price; }
+	void setAmount(int amount) { _amount = amount; }
+	const char* getName() { return _name; }
+	double getPrice() { return _price; }
+	int getAmount() { return _amount; }
+	static void show_count() { cout << "count:" << _count << endl; }
+
+};
+//类外定义：想要处理成内联函数需要加上关键字inline
+void cgood::init(const char* name, double price, int amount)//方法前面要加上类的作用域（返回值后面，函数名前面）
+{
+	strcpy_s(_name, name);//strcpy不安全
+	_price = price;
+	_amount = amount;
+
+}
+void cgood::show()//普通成员方法
+{
+	cout << "name:" << _name << endl;
+	cout << "price:" << _price << endl;
+	cout << "amount:" << _amount << endl;
+	_date.showdate();
+}
+void cgood::show()const //const cgood *this ==>常成员方法
+{
+	cout << "name:" << _name << endl;
+	cout << "price:" << _price << endl;
+	cout << "amount:" << _amount << endl;
+	_date.showdate();
+}
+//类外定义_count:
+int cgood::_count = 0;//类外定义，静态成员只能在类外定义并初始化，可以在类内进行声明
+int main()
+{
+	//如何计算类的内存大小----类的大小只和成员变量有关，和成员方法无关
+	//内存计算先找占用最长字节的变量，然后根据编译器的对齐方式排列，最后计算出来
+
+	//一个类可以定义无数个对象，每个对象都有自己的成员变量，但是他们共享一套成员方法
+
+	cgood g1("商品1", 10.0, 10, 2021, 10, 12);
+	cgood g2("商品2", 10.0, 10, 2021, 10, 12);
+	cgood g3("商品3", 10.0, 10, 2021, 10, 12);
+	cgood g4("商品4", 10.0, 10, 2021, 10, 12);
+	cgood g5("商品5", 10.0, 10, 2021, 10, 12);
+	g1.show_count();//虽然可以打印所有信息，但是调用的是某个具体成员中的方法，从代码的角度看怪怪的，存在this指针
+	//因为这是个普通的成员方法，编译器在调用的时候会传入this指针，对于特定的对象的地址
+	//cgood：：show_conut()这种调用又没有对象地址传入，不合法
+	//所以我们不能把这个方法写成普通的成员方法然后使用对象去调用它
+	//要是有类名去调用这个方法，应该把这个方法写成静态成员方法static---无this指针
+	cgood::show_count();
+	g1.show();
+	g2.show();
+	g3.show();
+	g4.show();
+	g5.show();
+	//需求：统计所有商品的总数量
+	const cgood g6("镇店之宝",100.0,10,2025,10,10);//const 对象信息不允许修改
+	//常量对象调用普通方法
+	//g6.show()--->不兼容普通成员方法，因为有const不能泄露给普通this指针
+	cgood::show_count();
+	g6.show();
+	return 0;
+}
+```
+### 8.指向类成员的指针
+#### 1.指向成员变量的指针
+```C++
+/*
+1.
+*/
+#include <iostream>
+using namespace std;
+class test
+{
+public:
+	void func() { cout << "call test::func" << endl; }
+	static void static_func() { cout << "test::static_func" << endl; }
+	int ma;
+	static int mb;
+private:
+
+};
+// 关键：类外定义静态成员变量，分配实际内存（必须加这一行）
+int test::mb = 0;
+int main()
+{
+	//1.我能不能通过一个普通的指针指向一个类的成员变量（在脱离对象的实体情况下----不行，不能脱离对象）
+	//int* p = &test::ma;//会报错，编译器认为两者的类型是不一致的
+	//int test::* p = &test::ma;//这样类型就相同了，可以运行
+	//*p = 20;
+	//会报错，*解引用作用操作数是指针，但编译器认为p的类型是int test::*
+	//其实也就是说这个ma一定是依赖于对象存在，脱离了对象再访问ma没有任何意义
+
+	//2.分别创建在栈上的对象和在堆上的对象
+	test t1;//栈自动创建
+	test* t2 = new test();//堆
+	int test::* p = &test::ma;
+	t1.*p = 20;
+	cout << t1.ma << endl;//运行没有问题
+	t2->*p = 30;
+	cout << t2->ma << endl;//t2是个指针，也没有问题
+	//3.静态成员变量不依赖于对象，可以通过普通指针指向静态成员变量
+	int* q = &test::mb;
+	*q = 40;
+	cout << test::mb << endl;//这句话没问题，但是静态成员变量在类中声明之后，一定要定义和初始化
+
+
+	delete t2;
+	return 0;
+}
+```
+#### 2.指向成员方法的指针
+```C++
+/*
+1.
+*/
+
 ```
 ## 4.使用类：
 ### 1.运算符重载
