@@ -619,9 +619,38 @@ int main()
 #### 2.指向成员方法的指针
 ```C++
 /*
-1.
+1.普通成员方法：依赖对象
+2.静态成员方法：不依赖对象
 */
+#include <iostream>
+using namespace std;
+class test
+{
+public:
+	void func() { cout << "call test::func" << endl; }
+	static void static_func() { cout << "test::static_func" << endl; }
+	int ma;
+	static int mb;
+private:
 
+};
+// 关键：类外定义静态成员变量，分配实际内存（必须加这一行）
+int test::mb = 0;
+int main()
+{
+	//指向成员方法的指针
+	test t1;//栈自动创建
+	test* t2 = new test();//堆
+	//void (*p_func)() = &test::func;//运行失败
+	//1.指向普通类成员方法的指针
+	void(test:: * p_func)() = &test::func;//可以运行，但是脱离对象就没有意义
+	(t1.*p_func)();//前面要加括号
+	(t2->*p_func)();
+	//2.指向静态成员方法的指针
+	void (*p_static_func)() = &test::static_func;
+	(*p_static_func)();
+	return 0;
+}
 ```
 ## 4.使用类：
 ### 1.运算符重载
