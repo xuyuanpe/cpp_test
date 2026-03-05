@@ -978,6 +978,223 @@ int main()
 }
 ```
 #### 3.空间配置器
+##### allocator的作用：
+```C++
+/*1.使用自己编写的vector模板类来创建类类型的向量容器，new操作符在生成时开辟空间并且构造对象，不断的调用构造函数和析构函数
+  2.由于析构时使用delete操作符，相当于把指针指向的每一个元素都当成对象析构一遍
+  3.而我们只需要他开辟空间，我们自己放入元素的个数和创建模板的大小可能是不一样的
+  4.所以，我们真正的需求是：构造函数时开辟空间和构造函数分开处理 析构容器有效的元素，释放整个底层的内存空间
+*/
+/*
+容器空间配置器的作用:
+内存开辟 内存释放 对象构造 对象析构
+*/
+#include<iostream>
+#include <typeinfo>
+//#include<vector>
+using namespace std;
+//vector 向量容器
+//容器
+//空间配置器 allocator：内存开辟 内存释放 对象构造 对象析构
+//自己实现空间配置器
+template<typename T>
+class Allocator
+{
+public:
+	T* allocate(size_t size)//只负责内存开辟
+	{
+		return(T *)malloc(sizeof(T) * size);
+	}
+	void deallocate(void* p)//负责内存释放
+	{
+		free(p);
+	}
+	void construct(T* p, const T& val)//负责对象构造
+	{
+		new (p)T(val);//定位new
+	}
+	void destroy(T* p)//负责析构对象
+	{
+		p->~T();//代表了T类型的析构函数
+	}
+};
+template <typename T,typename Alloc= Allocator<T>>
+class vector
+{
+public:
+	vector(int size = 10,const Alloc &alloc = Allocator<T>())
+		:_allocator(alloc)
+	{
+		//需要把内存开辟和对象构造分开处理
+		//_first = new T[size];
+		_first = _allocator.allocate(size);
+		_last = _first;
+		_end = _first + size;
+		//cout << typeid(*_first).name() << endl;
+	}
+	~vector()
+	{
+		//析构容器有效的元素，然后释放_first指针指向的堆内存
+		//delete[]_first;
+		for (T* p = _first; p != _last; ++p)
+		{
+			_allocator.destroy(p);
+		}
+		_allocator.deallocate(_first);
+		_first = _last = _end = nullptr;
+	}
+	vector(const vector<T>& other)//拷贝构造
+	{
+		int size = other._end - other._first;
+		//_first = new T[size];
+		_first = _allocator.allocate(size);
+		int len = other._last - other._first;
+		for (int i = 0; i < len; ++i)
+		{
+			//_first[i] = other._first[i];
+			_allocator.construct(_first + i, other._first[i]);
+		}
+		_last = _first + len;
+		_end = _first + size;
+	}
+	vector<T>& operator=(const vector<T>& other)//赋值重载函数
+	{
+		if (this == &other)
+		{
+			return *this;
+		}
+		//delete[]_first;
+		for (T *p = _first; p != _last; ++p)
+		{
+			_allocator.destroy(p);//把_first指针指向的数组的有效元素进行析构操作
+		}
+		_allocator.deallocate(_first);
+		int size = other._end - other._first;
+		//_first = new T[size];
+		_first = _allocator.allocate(size);
+		int len = other._last - other._first;
+		for (int i = 0; i < len; ++i)
+		{
+			//_first[i] = other._first[i];
+			_allocator.construct(_first + i, other._first[i]);
+		}
+		_last = _first + len;
+		_end = _first + size;
+		return *this;
+	}
+	void push_back(const T &val)//向容器末尾添加元素
+	{
+		if (full())
+		{
+			expand();
+		}
+		//*_last++ = val;
+		//在last指针位置构造一个值为val的对象
+		_allocator.construct(_last, val);
+		_last++;
+	}
+	void pop_back()//从容器末尾删除元素，
+	{
+		if (empty())
+		{
+			return;
+		}
+		//--_last;
+		//析构删除的元素再左移
+		--_last;
+		_allocator.destroy(_last);
+
+
+	}
+	T back()const//返回容器末尾元素值
+	{
+		return *(_last - 1);
+	}
+	bool full()const
+	{
+		return _last == _end;
+	}
+	bool empty()const
+	{
+		return _first == _last;
+	}
+	int size()
+	{
+		return _last - _first;
+	}
+	private:
+	T* _first;//指向第一个有效元素的指针，数组的起始位置 
+	T* _last;//指向最后一个有效元素的后继
+	T* _end;//指向整个数组最后一个位置的后继
+	Alloc _allocator;//定义容器的空间配置器对象
+	void expand()
+	{
+		int size = _last - _first;
+		//T * ptmp = new T[2 * size];
+		T* ptmp = _allocator.allocate(2 * size);
+
+		for (int i = 0; i < size; ++i)
+		{
+			_allocator.construct(ptmp + i, _first[i]);
+			//ptmp[i] = _first[i];
+
+		}
+		//delete[]_first;
+		for (T* p = _first; p != _last; ++p)
+		{
+			_allocator.destroy(p);
+		}
+		_allocator.deallocate(_first);
+		_first = ptmp;
+		_last = _first + size;
+		_end = _first + 2 * size;
+
+	}
+};
+class test
+{
+public:
+	test()
+	{
+		cout << "call test" << endl;
+	}
+	~test()
+	{
+		cout << "call ~test" << endl;
+	}
+	test(const test& other) { cout << "test(const test&)" << endl; }
+private:
+};
+int main()
+{
+	/*vector<int>vec;
+	for (int i = 0; i < 20; ++i)
+	{
+		vec.push_back(rand() % 100);
+	}
+	while (!vec.empty())
+	{
+		cout << vec.back() << " ";
+		vec.pop_back();
+	}
+	cout << endl;*/
+	test t1, t2, t3;
+	
+	cout << "--------------" << endl;
+	vector<test> t;//构造十个对象（默认）
+	t.push_back(t1);
+	t.push_back(t2);
+	t.push_back(t3);
+	cout << "--------------" << endl;
+	t.pop_back();//只需要析构对象，把对象的析构和内存的释放也分离开，因为这块内存是属于数组的，使用delete会把这一块空间给释放
+	cout << "--------------" << endl;
+	//理论上，vector<test> t只是开辟了内存，随后我们的push_back()执行，在内存中开始创建对象
+	//然而现在的逻辑是，我们执行完vector<test> t后，他开辟空间并且创建了对象，我们执行的push_back变成了赋值
+	//如果我们的执行pop_back也就是将_last向左移，而test这个对象还有指针指向外部空间，那么test对象指向的外部空间就得不到释放
+	//所以在容器的空间管理中，不能直接用new和delete
+	return 0;
+}
+```
 ## 8.友元、异常和其他:
 ### 1.友元
 ```c++
