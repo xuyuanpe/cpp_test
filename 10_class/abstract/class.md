@@ -741,9 +741,243 @@ int main()
 
 ```
 ### 4.类模板
+#### 1.任意数据类型都可以使用的顺序栈
 ```c++
+//类模板===>实例化 ====>模板类
+//模板顺序栈
+#include <iostream>
+#include <typeinfo>  // 必须包含此头文件
 
+using namespace std;
+template<typename T>
+class seqstack  //模板名称，还没有创建具体的类 格式为模板名 +<类型参数列表> =类名称
+{
+public:
+	seqstack<T>(int size = 10)//构造--<T>可以省略
+		:_pstack(new T [size])
+		,_top(0)
+		,_size(size)//成员变量的初始化写在构造函数参数列表中
+	{
+		cout << "call seqstack<T>create :"<< typeid(*_pstack).name() << endl;
+	}
+	~seqstack<T>()//析构--<T>可以省略
+	{
+		cout << "call ~seqstack<T>" << endl;
+		delete[]_pstack;
+		_pstack = nullptr;
+	}
+	seqstack<T>(const seqstack<T> &stack) //拷贝构造----<T>可以省略
+		:_top(stack._top)
+		,_size(stack._size)
+	{
+		_pstack = new T[_size];
+		for (int i = 0; i < _top; ++i)
+		{
+			_pstack[i] = stack._pstack[i];
+		}
+	}
+	seqstack<T>& operator=(const seqstack<T>& stack)//赋值运算符的重载函数
+	{
+		if (this == &stack)
+		{
+			return *this;
+		}
+		delete[]_pstack;
+		_top = stack._top;
+		_size = stack._size;
+		_pstack = new T[_size];
+		for (int i = 0; i < _top; ++i)
+		{
+			_pstack[i] = stack._pstack[i];
+		}
+		return *this;
+
+	}
+	void push(const T& val)
+	{
+		if (full())
+		{
+			expand();
+		}
+		_pstack[_top++] = val;
+
+	}
+	void pop()
+	{
+		if (empty())
+		{
+			return;
+		}
+		--_top;
+	}
+	T top()const
+	{
+		if (empty())
+		{
+			throw "stack is empty!";//抛出异常也代表函数逻辑结束返回
+		}
+		return _pstack[_top - 1];
+
+	}
+	bool full()const { return _top == _size; }
+	bool empty()const { return _top == 0; }
+
+private:
+	T* _pstack;
+	int _top;
+	int _size;
+	void expand()//扩容
+	{
+		T* ptmp = new T[_size * 2];
+		for (int i = 0; i < _top; ++i)
+		{
+			ptmp[i] = _pstack[i];
+		}
+		delete[]_pstack;
+		_pstack = ptmp;
+		_size *= 2;
+	}
+};
+
+int main()
+{
+	seqstack<int> s1;
+	s1.push(20);
+	s1.push(30);
+	s1.push(40);
+	s1.push(50);
+	s1.pop();
+	cout << s1.top() << endl;
+
+	seqstack<char> s2;
+	seqstack<double> s3;
+	return 0;
+}
 ```
+#### 2.类模板实现vector顺序容器
+```C++
+#include<iostream>
+#include <typeinfo>
+//#include<vector>
+using namespace std;
+//vector 向量容器
+//容器
+//空间配置器 allocator
+template <typename T>
+class vector
+{
+public:
+	vector(int size = 10)
+	{
+		_first = new T[size];
+		_last = _first;
+		_end = _first + size;
+		cout << typeid(*_first).name() << endl;
+	}
+	~vector()
+	{
+		delete[]_first;
+		_first = _last = _end = nullptr;
+	}
+	vector(const vector<T>& other)
+	{
+		int size = other._end - other._first;
+		_first = new T[size];
+		int len = other._last - other._first;
+		for (int i = 0; i < len; ++i)
+		{
+			_first[i] = other._first[i];
+		}
+		_last = _first + len;
+		_end = _first + size;
+	}
+	vector<T>& operator=(const vector<T>& other)
+	{
+		if (this == &other)
+		{
+			return *this;
+		}
+		delete[]_first;
+		int size = other._end - other._first;
+		_first = new T[size];
+		int len = other._last - other._first;
+		for (int i = 0; i < len; ++i)
+		{
+			_first[i] = other._first[i];
+		}
+		_last = _first + len;
+		_end = _first + size;
+		return *this;
+	}
+	void push_back(const T &val)//向容器末尾添加元素
+	{
+		if (full())
+		{
+			expand();
+		}
+		*_last++ = val;
+	}
+	void pop_back()//从容器末尾删除元素
+	{
+		if (empty())
+		{
+			return;
+		}
+		--_last;
+	}
+	T back()const//返回容器末尾元素值
+	{
+		return *(_last - 1);
+	}
+	bool full()const
+	{
+		return _last == _end;
+	}
+	bool empty()const
+	{
+		return _first == _last;
+	}
+	int size()
+	{
+		return _last - _first;
+	}
+	private:
+	T* _first;//指向第一个有效元素的指针，数组的起始位置 
+	T* _last;//指向最后一个有效元素的后继
+	T* _end;//指向整个数组最后一个位置的后继
+	void expand()
+	{
+		int size = _last - _first;
+		T * ptmp = new T[2 * size];
+		for (int i = 0; i < size; ++i)
+		{
+			ptmp[i] = _first[i];
+
+		}
+		delete[]_first;
+		_first = ptmp;
+		_last = _first + size;
+		_end = _first + 2 * size;
+
+	}
+};
+int main()
+{
+	vector<int>vec;
+	for (int i = 0; i < 20; ++i)
+	{
+		vec.push_back(rand() % 100);
+	}
+	while (!vec.empty())
+	{
+		cout << vec.back() << " ";
+		vec.pop_back();
+	}
+	cout << endl;
+	return 0;
+}
+```
+#### 3.空间配置器
 ## 8.友元、异常和其他:
 ### 1.友元
 ```c++
