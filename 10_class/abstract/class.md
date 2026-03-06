@@ -664,7 +664,129 @@ T sum(T a,T b)
 }
 */
 //复数类：
+#include<iostream>
+using namespace std;
+//运算符重载
+//template<typename T>
+class CComplex //复数类
+{
+public:
+	//这里因为构造函数有默认值，所以传一个数看一看作是给实部赋值，虚部默认为0
+	CComplex(int r =0,int i=0 ):mreal(r),mimage(i)
+	{
+		cout << "call CComplex" << endl;
+	}
+	//告诉编译器怎么做CComplex类的加法
+	//comp1,comp2参与加法，得到comp3，但本身一定是保持不变
+	//所以在重载函数中我们要定义一个新对象来接收两个对象相加的结果，最后返回这个新对象
+	CComplex operator+(const CComplex & other)//====>返回值是CComplex类型，传入的参数也是CComolex类型
+	{
+		CComplex comp;//这样定义的comp属于这个函数的局部对象，在函数运行结束后栈帧回退，该临时对象内存会被删除
+		comp.mreal = this->mreal + other.mreal;
+		comp.mimage = this->mimage + other.mimage;
+		return comp;
+		//return CComplex(this->mreal + other.mreal,this->mimage + other.mimage);
+	}
+	CComplex operator++(int)
+	{
+		//CComplex comp = *this;
+		//mreal += 1;
+		//mimage += 1;
+		//return comp;//先赋值
+		return CComplex(mreal++, mimage++);//少了comp对象构造和析构的过程
+	}
+	CComplex operator++()
+	{
+		//mreal += 1;
+		//mimage += 1;
+		//return *this;//先++
+		return CComplex(++mreal, ++mimage);
+	}
+	void operator+=(const CComplex& other)
+	{
+		mreal += other.mreal;
+		mimage += other.mimage;
+	}
+	~CComplex()
+	{
+		cout << "call ~CComplex" << endl;
+ 	}
+	void show()
+	{
+		cout << "real:" << mreal << endl;
+		cout << "image:" << mimage << endl;
+	}
 
+private:
+	int mreal;//实部
+	int mimage;//虚部
+	friend CComplex operator+(const CComplex& lhs, const CComplex& rhs);
+	friend ostream& operator<<(ostream& out, const CComplex& other);
+	friend istream& operator>>(istream& input, CComplex& other);
+};
+CComplex operator+(const CComplex& lhs, const CComplex& rhs)//将其定义为友元函数，用以访问私有变量
+{
+	return CComplex(lhs.mreal + rhs.mreal, lhs.mimage + rhs.mimage);//私有成员变量不可类外访问
+}
+ostream& operator<<(ostream& out, const CComplex& other)
+{
+	out << "mreal: " << other.mreal <<" " << "mimage: " << other.mimage << endl;
+	return out;
+}
+istream& operator>>(istream& input, CComplex& other)
+{
+	input >> other.mreal >> other.mimage;
+	return input;
+}
+
+
+
+
+//template<typename T>
+//void show(T a)//如果T是CComplex类型该怎么办 让对象也支持cout<< <<endl;
+//{
+//	cout << a << endl;
+//}
+
+int main()
+{
+	CComplex comp1(10, 10);
+	CComplex comp2(20, 20);
+	// 编译器首先再comp1对象里找有没有+这个成员方法--->comp1.operator+(comp2)加法运算符的重载函数
+	//CComplex comp3 = comp1 + comp2;
+	//对象和整数（作为复数的实部）相加的情况又会怎样处理 能不能把这个整数转换成复数类型CComplex
+	//CComplex comp4 = comp1 + 20;//===>comp1.operator+(complex(20)):隐含了一个类型转换
+	/*编译器做对象运算时，会调用对象的运算符重载函数（优先调用成员方法）
+	* 如果没有合适的成员方法，就在全局作用域找合适的运算符重载函数 
+	* ：：operator+（30，comp1）----全局
+	*/
+	//===>没有定义这样的重载运算符，不成立,添加友元函数后，30会被处理成实部为30，虚部为0的临时对象
+	CComplex comp5 = 30 + comp1;
+	//comp3.show();
+	//comp4.show();
+	//comp5.show();
+	//没有定义这个++运算符的重载函数 前置先++再赋值，后置先赋值再++
+	//++ -- 是单目运算符 只有一个操作数 区分不了前置和后缀
+	//C++规定operator++()----前置   operator++(int)----后缀
+	//CComplex operator++(int)---后缀
+	comp5 = comp1++;
+	comp1.show();
+	comp5.show();
+	//CComplex operator++()----前置 
+	comp5 = ++comp1;
+	comp1.show();
+	comp5.show();
+	//void comp1.operator+=(comp2)
+	comp1 += comp2;
+	comp1.show();
+	//对象在右边，不能作为成员方法
+	//定义为全局方法 ：：operator<<(cout,comp1)
+	//ostream& operator<<(ostream&, const CComplex &)
+	cin >> comp1 >> comp2;
+	cout << comp1 << endl;
+	cout << comp2 << endl;
+	return 0;
+}
 ```
 ### 2.计算时间
 ```c++
@@ -674,13 +796,17 @@ T sum(T a,T b)
 ```c++
 
 ```
-### 4.重载
+### 4.模拟C++实现string类代码
 ```c++
 
 ```
 ### 5.类的自动转换和强制类型转换
 ```c++
+/*
+在 C++ 中，类的类型转换分为自动类型转换（隐式转换） 和强制类型转换（显式转换），
+核心是通过类的构造函数或转换函数实现自定义类型与其他类型（内置类型 / 其他类）的转换
 
+*/
 ```
 ## 5.类和动态内存分配：
 ### 1.动态内存和类
