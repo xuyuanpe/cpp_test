@@ -798,9 +798,621 @@ int main()
 ```
 ### 4.模拟C++实现string类代码
 ```c++
+#include<iostream>
+#include<string>
+using namespace std;
+class String //自己实现一个字符串对象
+{
+public:
+	String(const char* p = nullptr)
+	{
+		if (p != nullptr)
+		{
+			_pstr = new char[strlen(p) + 1];//strlen是计算有效字符串长度，而c格式的字符串在字符后面还有个尾0
+			strcpy(_pstr, p);
+		}
+		else
+		{
+			_pstr = new char[1];
+			*_pstr = '\0';//避免每次使用都要判断其是否为nullptr
+		}
+	}
+	~String()
+	{
+		delete[]_pstr;
+		_pstr = nullptr;
+	}
+	//拷贝构造函数
+	String(const String& other)
+	{
+		_pstr = new char[strlen(other._pstr) + 1];
+		strcpy(_pstr, other._pstr);
 
+	}
+	//赋值运算符的重载
+	String& operator=(const String& other)
+	{
+		if (this == &other)
+		{
+			return *this;
+		}
+		else
+		{
+			delete[]_pstr;
+			_pstr = new char[strlen(other._pstr) + 1];
+			strcpy(_pstr, other._pstr);
+			return *this;
+		}
+	}
+	bool operator>(const String &other)const
+	{
+		return strcmp(_pstr, other._pstr)>0;
+	}
+	bool operator<(const String& other)const
+	{
+		return strcmp(other._pstr, _pstr)>0;
+	}
+	bool operator==(const String& other)const
+	{
+		return strcmp(other._pstr, _pstr)==0;
+	}
+	int length()const { return strlen(_pstr); }//返回有效字符个数
+	//char& str6.operator[](i)===>str6[i]===>char &
+	char& operator[](int index) { return _pstr[index]; }//普通方法---可修改
+	const char& operator[](int index)const { return _pstr[index]; }//常方法---仅读取
+	//返回char*类型
+	const char* c_str()const { return _pstr; }
+private:
+	char* _pstr;
+	friend ostream& operator<<(ostream& out, const String& other);
+	friend String operator+(const String& lhs, const String& rhs);
+};
+//全局的加法重载函数
+String operator+(const String &lhs,const String &rhs)//没有delete过，会造成内存泄漏
+{
+	////strcat(lhs._pstr,rhs._pstr)---->原来的字符串长度不够需要重新构造
+	//char* ptmp = new char[strlen(lhs._pstr) + strlen(rhs._pstr)+1];
+	//strcpy(ptmp, lhs._pstr);
+	//strcat(ptmp, rhs._pstr);
+	//String tmp(ptmp);
+	//delete[]ptmp;
+	//return tmp;//思考一下如何能使效率更高
+	String tmp;
+	tmp._pstr = new char[strlen(lhs._pstr) + strlen(rhs._pstr) + 1];
+	strcpy(tmp._pstr, lhs._pstr);
+	strcat(tmp._pstr, rhs._pstr);
+	return tmp;//临时对象
+
+}
+//全局的打印函数
+ostream& operator<<(ostream& out, const String& other)
+{
+	out << other._pstr;
+	return out;
+}
+//全局的输入函数
+//istream& operator>>(istream& in, const String& other)
+//{
+//
+//}
+int main()
+{
+#if 0
+	String str1;
+	String str2 = "aaa";
+	String str3 = "bbb";
+	String str4 = str2 + str3;//拼接---》提供了一个全局的+运算符重载函数，既可以对象和对象相加，也可以对象和字符串相加
+	String str5 = str2 + "ccc";
+	String str6 = "ddd" + str2;
+	cout << str1 << endl;
+	cout << str2 << endl;
+	cout << str3 << endl;
+	cout << str4 << endl;
+	cout << str5 << endl;
+	cout << str6 << endl;
+	if (str5 > str6)
+	{
+		cout << str5 << ">" << str6 << endl;
+	}
+	else
+	{
+		cout << str5 << "<" << str6 << endl;
+	}
+	int len = str6.length();
+	int size = sizeof(str6);//计算的是string类本身的大小
+	int size2 = sizeof("aaabbb");//--->7==》c风格的字符串表示是字符个数后加上'\0'结束符
+	cout << "len= " << len << endl;
+	cout << "size =" << size << endl;
+	cout << "size2 =" << size2 << endl;
+	for (int i = 0; i < len; ++i)
+	{
+		cout << str6[i] << " ";//对象当成数组名来使用
+	}
+	cout << endl;
+
+	//string--->char*
+	//将string里的字符串拷贝到buf里面
+	char buf[1024] = { 0 };
+	strcpy(buf, str6.c_str());//c_str能将对象的字符串返回为char*类型
+	cout << "buf:" << buf << endl;
+#endif
+	return 0;
+}
 ```
-### 5.类的自动转换和强制类型转换
+### 5.string字符串对象的迭代器iterator实现
+```C++
+//迭代器可以透明的访问容器内部的元素的值
+//每一种容器都有自己的迭代器
+//++运算符重载和*运算符重载
+//泛型算法接收的都是迭代器---泛型算法--全局函数---给所有容器用的----有一套统一的操作可以遍历所以容器的元素---用迭代器
+#include<iostream>
+//#include<string>
+using namespace std;
+class String //自己实现一个字符串对象
+{
+public:
+	String(const char* p = nullptr)
+	{
+		if (p != nullptr)
+		{
+			_pstr = new char[strlen(p) + 1];//strlen是计算有效字符串长度，而c格式的字符串在字符后面还有个尾0
+			strcpy(_pstr, p);
+		}
+		else
+		{
+			_pstr = new char[1];
+			*_pstr = '\0';//避免每次使用都要判断其是否为nullptr
+		}
+	}
+	~String()
+	{
+		delete[]_pstr;
+		_pstr = nullptr;
+	}
+	//拷贝构造函数
+	String(const String& other)
+	{
+		_pstr = new char[strlen(other._pstr) + 1];
+		strcpy(_pstr, other._pstr);
+
+	}
+	//赋值运算符的重载
+	String& operator=(const String& other)
+	{
+		if (this == &other)
+		{
+			return *this;
+		}
+		else
+		{
+			delete[]_pstr;
+			_pstr = new char[strlen(other._pstr) + 1];
+			strcpy(_pstr, other._pstr);
+			return *this;
+		}
+	}
+	bool operator>(const String &other)const
+	{
+		return strcmp(_pstr, other._pstr)>0;
+	}
+	bool operator<(const String& other)const
+	{
+		return strcmp(other._pstr, _pstr)>0;
+	}
+	bool operator==(const String& other)const
+	{
+		return strcmp(other._pstr, _pstr)==0;
+	}
+	int length()const { return strlen(_pstr); }//返回有效字符个数
+	//char& str6.operator[](i)===>str6[i]===>char &
+	char& operator[](int index) { return _pstr[index]; }//普通方法---可修改
+	const char& operator[](int index)const { return _pstr[index]; }//常方法---仅读取
+	//返回char*类型
+	const char* c_str()const { return _pstr; }
+	//实现String的迭代器：提供一种统一的方式，来透明的遍历访问容器
+	class iterator
+	{
+	public:
+		iterator(char* p = nullptr):_pit(p)
+		{
+
+		}
+		bool operator!=(const iterator& it)
+		{
+			return _pit != it._pit; 
+		}
+		void operator++()
+		{
+			++ _pit ;
+		}
+		char& operator*() { return *_pit; }
+	private:
+		char* _pit;
+	};
+	
+	iterator begin() { return iterator(_pstr); }//返回容器底层首元素的迭代器表示
+	iterator end() { return iterator(_pstr + length()); }//返回的是容器底层尾元素后继的迭代器表示
+private:
+	char* _pstr;
+	friend ostream& operator<<(ostream& out, const String& other);
+	friend String operator+(const String& lhs, const String& rhs);
+};
+//全局的加法重载函数
+String operator+(const String &lhs,const String &rhs)//没有delete过，会造成内存泄漏
+{
+	////strcat(lhs._pstr,rhs._pstr)---->原来的字符串长度不够需要重新构造
+	//char* ptmp = new char[strlen(lhs._pstr) + strlen(rhs._pstr)+1];
+	//strcpy(ptmp, lhs._pstr);
+	//strcat(ptmp, rhs._pstr);
+	//String tmp(ptmp);
+	//delete[]ptmp;
+	//return tmp;//思考一下如何能使效率更高
+	String tmp;
+	tmp._pstr = new char[strlen(lhs._pstr) + strlen(rhs._pstr) + 1];
+	strcpy(tmp._pstr, lhs._pstr);
+	strcat(tmp._pstr, rhs._pstr);
+	return tmp;//临时对象
+
+}
+//全局的打印函数
+ostream& operator<<(ostream& out, const String& other)
+{
+	out << other._pstr;
+	return out;
+}
+//全局的输入函数
+//istream& operator>>(istream& in, const String& other)
+//{
+//
+//}
+int main()
+{
+	String str1 = "hello";//str1--->容器
+	//遍历？
+	//容器的迭代器 begin---第一个元素 end----最后一个元素的后继
+	String::iterator it = str1.begin();
+	//auto it =str1.begin();自动类型推导
+	for (; it != str1.end(); ++it)
+	{
+		cout << *it << " ";
+
+	}
+	cout << endl;
+	//c++ 11 foreach方式实现遍历---->基于可用的begin和end函数，底层仍然是通过迭代器遍历的
+	for (char ch : str1)
+	{
+		cout << ch << " ";
+	}
+	cout<< endl;
+
+	return 0;
+}
+```
+### 6.vector对象的迭代器实现
+```C++
+#include<iostream>
+#include <typeinfo>
+//#include<vector>
+using namespace std;
+//vector 向量容器
+//容器
+//空间配置器 allocator：内存开辟 内存释放 对象构造 对象析构
+//自己实现空间配置器
+template<typename T>
+class Allocator
+{
+public:
+	T* allocate(size_t size)//只负责内存开辟
+	{
+		return(T *)malloc(sizeof(T) * size);
+	}
+	void deallocate(void* p)//负责内存释放
+	{
+		free(p);
+	}
+	void construct(T* p, const T& val)//负责对象构造
+	{
+		new (p)T(val);//定位new
+	}
+	void destroy(T* p)//负责析构对象
+	{
+		p->~T();//代表了T类型的析构函数
+	}
+};
+template <typename T,typename Alloc= Allocator<T>>
+class vector
+{
+public:
+	vector(int size = 10,const Alloc &alloc = Allocator<T>())
+		:_allocator(alloc)
+	{
+		//需要把内存开辟和对象构造分开处理
+		//_first = new T[size];
+		_first = _allocator.allocate(size);
+		_last = _first;
+		_end = _first + size;
+		//cout << typeid(*_first).name() << endl;
+	}
+	~vector()
+	{
+		//析构容器有效的元素，然后释放_first指针指向的堆内存
+		//delete[]_first;
+		for (T* p = _first; p != _last; ++p)
+		{
+			_allocator.destroy(p);
+		}
+		_allocator.deallocate(_first);
+		_first = _last = _end = nullptr;
+	}
+	vector(const vector<T>& other)//拷贝构造
+	{
+		int size = other._end - other._first;
+		//_first = new T[size];
+		_first = _allocator.allocate(size);
+		int len = other._last - other._first;
+		for (int i = 0; i < len; ++i)
+		{
+			//_first[i] = other._first[i];
+			_allocator.construct(_first + i, other._first[i]);
+		}
+		_last = _first + len;
+		_end = _first + size;
+	}
+	vector<T>& operator=(const vector<T>& other)//赋值重载函数
+	{
+		if (this == &other)
+		{
+			return *this;
+		}
+		//delete[]_first;
+		for (T *p = _first; p != _last; ++p)
+		{
+			_allocator.destroy(p);//把_first指针指向的数组的有效元素进行析构操作
+		}
+		_allocator.deallocate(_first);
+		int size = other._end - other._first;
+		//_first = new T[size];
+		_first = _allocator.allocate(size);
+		int len = other._last - other._first;
+		for (int i = 0; i < len; ++i)
+		{
+			//_first[i] = other._first[i];
+			_allocator.construct(_first + i, other._first[i]);
+		}
+		_last = _first + len;
+		_end = _first + size;
+		return *this;
+	}
+	void push_back(const T &val)//向容器末尾添加元素
+	{
+		if (full())
+		{
+			expand();
+		}
+		//*_last++ = val;
+		//在last指针位置构造一个值为val的对象
+		_allocator.construct(_last, val);
+		_last++;
+	}
+	void pop_back()//从容器末尾删除元素，
+	{
+		if (empty())
+		{
+			return;
+		}
+		//--_last;
+		//析构删除的元素再左移
+		--_last;
+		_allocator.destroy(_last);
+
+
+	}
+	T back()const//返回容器末尾元素值
+	{
+		return *(_last - 1);
+	}
+	bool full()const
+	{
+		return _last == _end;
+	}
+	bool empty()const
+	{
+		return _first == _last;
+	}
+	int size()
+	{
+		return _last - _first;
+	}
+	T& operator[](int index)
+	{ 
+		if (index < 0 || index >= size())
+		{
+			throw "OUT OF RANGE EXCEPTION !";
+		}
+			
+		return _first[index]; 
+	}
+	//迭代器一般实现为容器的嵌套类型
+	class iterator 
+	{
+	public:
+		iterator(T *p =nullptr):_ptr(p){ }
+		bool operator!=(const iterator& it)const
+		{
+			return _ptr != it._ptr;
+		}
+		void operator++()
+		{
+			_ptr++;
+		}
+		T& operator*() { return *_ptr; }
+		const T& operator*()const { return *_ptr; }
+	private:
+		T* _ptr;
+	};
+	//begin end
+	iterator begin() { return iterator(_first); }
+	iterator end() { return iterator(_last); }
+	private:
+	T* _first;//指向第一个有效元素的指针，数组的起始位置 
+	T* _last;//指向最后一个有效元素的后继
+	T* _end;//指向整个数组最后一个位置的后继
+	Alloc _allocator;//定义容器的空间配置器对象
+	void expand()
+	{
+		int size = _last - _first;
+		//T * ptmp = new T[2 * size];
+		T* ptmp = _allocator.allocate(2 * size);
+
+		for (int i = 0; i < size; ++i)
+		{
+			_allocator.construct(ptmp + i, _first[i]);
+			//ptmp[i] = _first[i];
+
+		}
+		//delete[]_first;
+		for (T* p = _first; p != _last; ++p)
+		{
+			_allocator.destroy(p);
+		}
+		_allocator.deallocate(_first);
+		_first = ptmp;
+		_last = _first + size;
+		_end = _first + 2 * size;
+
+	}
+};
+class test
+{
+public:
+	test()
+	{
+		cout << "call test" << endl;
+	}
+	~test()
+	{
+		cout << "call ~test" << endl;
+	}
+	test(const test& other) { cout << "test(const test&)" << endl; }
+private:
+};
+int main()
+{
+	///*vector<int>vec;
+	//for (int i = 0; i < 20; ++i)
+	//{
+	//	vec.push_back(rand() % 100);
+	//}
+	//while (!vec.empty())
+	//{
+	//	cout << vec.back() << " ";
+	//	vec.pop_back();
+	//}
+	//cout << endl;*/
+	//test t1, t2, t3;
+	//
+	//cout << "--------------" << endl;
+	//vector<test> t;//构造十个对象（默认）
+	//t.push_back(t1);
+	//t.push_back(t2);
+	//t.push_back(t3);
+	//cout << "--------------" << endl;
+	//t.pop_back();//只需要析构对象，把对象的析构和内存的释放也分离开，因为这块内存是属于数组的，使用delete会把这一块空间给释放
+	//cout << "--------------" << endl;
+	////理论上，vector<test> t只是开辟了内存，随后我们的push_back()执行，在内存中开始创建对象
+	////然而现在的逻辑是，我们执行完vector<test> t后，他开辟空间并且创建了对象，我们执行的push_back变成了赋值
+	////如果我们的执行pop_back也就是将_last向左移，而test这个对象还有指针指向外部空间，那么test对象指向的外部空间就得不到释放
+	////所以在容器的空间管理中，不能直接用new和delete
+	vector<int>vec;
+	for (int i = 0; i < 20; ++i)
+	{
+		vec.push_back(rand() % 100 + 1);
+	}
+	auto it = vec.begin();
+	for (; it != vec.end(); ++it)
+	{
+		cout << *it << " ";
+	}
+	cout << endl;
+	for (auto i : vec)
+	{
+		cout << i << " ";
+	}
+	cout << endl;
+
+	return 0;
+}
+```
+### 7.容器的迭代器失效问题
+```C++
+#include<iostream>
+#include<vector>
+/*
+* 1.迭代器为什么会失效：
+* a.当容器调用arase ，当前位置到容器末尾所有迭代器全部失效
+* b.当容器调用insert，插入位置到容器末尾所有迭代器全部失效
+* c.扩容：全部失效
+* 2.为什么会失效
+* 3.怎么解决迭代器失效问题：迭代器更新
+*/
+using namespace std;
+int main()
+{
+	vector<int>vec;
+	for (int i = 0; i < 20; ++i)
+	{
+		vec.push_back(rand() % 100 + 1);
+	}
+	for (int i : vec)
+	{
+		cout << i << " ";
+	}
+	cout<<endl;
+#if 1
+	//1.删除vec容器中的所有偶数
+	auto it = vec.begin();
+	while(it != vec.end())//不能用++it，因为删除以后，后面的元素会往前挪
+	{
+		if ((*it) % 2 == 0)
+		{
+			//迭代器失效：发生在第一次调用erase以后--->容器缩小
+			//erase会返回一个新的迭代器
+			//更新迭代器
+			it = vec.erase(it);//从容器中删除it当前指向元素 insert --->insert(it,val);
+			//break;//只删除一个
+		}
+		else
+		{
+			++it;
+		}
+	}
+	for (int i : vec)
+	{
+		cout << i << " ";
+	}
+	cout << endl;
+	
+#endif
+#if 0
+	//2.给vec容器所有的偶数前面添加一个数（比偶数值小1）
+	auto it = vec.begin();
+	for (; it != vec.end(); ++it)
+	{
+		if ((*it) % 2 == 0)
+		{
+			//迭代器失效----容器增大
+			vec.insert(it, *it - 1);
+			//break;
+		}
+	}
+#endif
+	return 0;
+}
+```
+```C++
+//自己实现更新迭代器
+```
+### 8.类的自动转换和强制类型转换
 ```c++
 /*
 在 C++ 中，类的类型转换分为自动类型转换（隐式转换） 和强制类型转换（显式转换），
