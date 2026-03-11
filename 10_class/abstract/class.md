@@ -1420,6 +1420,113 @@ int main()
 
 */
 ```
+### 9.实现对象池
+```C++
+#include<iostream>
+
+//对象池 池化技术
+using namespace std;
+
+template<typename T>
+class Queue
+{
+public:
+	Queue()
+	{
+		_front = _rear = new QueueItem();
+	}
+	~Queue()
+	{
+		QueueItem* cur = _front;
+		while (cur!= nullptr)
+		{
+			_front = _front->_next;
+			delete cur;
+			cur = _front;
+		}
+	}
+	void push(const T& val)//入队操作
+	{
+		QueueItem* item = new QueueItem(val);
+		_rear->_next = item;
+		_rear = item;
+	}
+	void pop()
+	{
+		if (empty())
+		{
+			return;
+		}
+		QueueItem* first = _front->_next;
+		_front->_next = first->_next;
+		
+		if (_front->_next == nullptr)
+		{
+			_rear = _front;
+		}
+		delete first;
+	}
+	T front()const
+	{
+		return _front->_next->_data;
+	}
+	bool empty()const
+	{
+		return _front == _rear;
+	}
+private:
+	struct QueueItem //产生一个QueueItem的对象池（1000个QueueItem）
+	{
+		QueueItem(T data = T()) :_data(data),_next(nullptr){}
+		//给QueueItem提供自定义内存管理 也是在堆上开辟的
+		void* operator new(size_t size)
+		{
+			if (free_pool_ptr == nullptr)
+			{
+				free_pool_ptr = (QueueItem*)new char[POOL_ITEM_SIZE*sizeof(QueueItem)];
+				QueueItem* p = free_pool_ptr;
+				for (; p < (free_pool_ptr + POOL_ITEM_SIZE - 1); ++p)
+				{
+					p->_next = p + 1;
+				}
+				p->_next = nullptr;
+			}
+			QueueItem* p = free_pool_ptr;
+			free_pool_ptr = free_pool_ptr->_next;
+			return p;
+			
+		}
+		void operator delete(void* ptr)
+		{
+			QueueItem* p = (QueueItem*)ptr;
+			p->_next = free_pool_ptr;
+			free_pool_ptr = p;
+		}
+		T _data;
+		QueueItem* _next;
+		static QueueItem* free_pool_ptr;//指向对象池的指针
+		static const int POOL_ITEM_SIZE =100000;
+	};
+	
+	QueueItem* _front;//指向头节点
+	QueueItem* _rear;//指向队尾
+};
+template<typename T>
+typename Queue<T>::QueueItem* Queue<T>::QueueItem::free_pool_ptr = nullptr;
+int main()
+{
+	Queue<int> que;
+	//数量多起来，短时间内会大量的执行开辟内存和释放内存的操作，如果之间产生一个QueueItem的对象池，后面统一的进行内存的管理
+	//就可以实现程序性能的优化
+	for (int i = 0; i < 1000; ++i)
+	{
+		que.push(i);
+		que.pop();
+	}
+	cout << que.empty() << endl;
+	return 0;
+}
+```
 ## 5.类和动态内存分配：
 ### 1.动态内存和类
 ```c++
