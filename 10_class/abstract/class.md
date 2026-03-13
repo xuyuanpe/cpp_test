@@ -1553,13 +1553,77 @@ int main()
 
 ```
 ## 6.类继承：
+```C++
+/* 
+1.继承的本质和原理
+2.派生类的构造原理
+3.重载 覆盖 隐藏
+4.静态绑定和动态绑定
+5.多态 vfptr vftable
+6.抽象类的设计原理
+7.多重继承以及问题
+8.虚基类 vbptr vbtable
+9.RTTI
+10.C++四种类型强转
+11.继承多态常见问题 
+*/
+```
 ### 1.基类
+
 ```c++
 
 ```
 ### 2.继承关系
 ```c++
-
+#include<iostream>
+using namespace std;
+/*
+* 1.继承的本质和原理
+* a：代码的复用
+* 2.类和类之间的关系 组合 继承
+* 3.访问权限：权限不能大于继承方式 比如基类的public被子类以protected方式继承，那就按protected的权限处理
+* 4.private成员可以被继承，但是派生类无法直接访问
+* 5.保护成员和私有成员的区别 ：基类的成员想被派生类访问，又不想被外部访问
+* 6.class定义派生类，默认为私有private struct 定义派生类 默认是public
+* 7.派生类的构造过程：
+* 继承的方式      基类的访问限定      派生类的访问限定      外部访问限定
+* public：
+*                 public              public--->ok        public-->ok
+*				  protected           protected--->ok     no
+*                 private             no 不可见            no
+* protected： 
+*                 public			  protected            no
+*				  protected           protected            no
+*				  private             不可见               no
+* private： 
+*                 public              private              no
+*                 protected           private              no
+*				  private             不可见                no
+*/
+class A
+{
+public:
+	int _pub_a;
+protected:
+	int _pro_a;
+private:
+	int _pri_a;//自己或者友元能访问，对子类也是不可见
+};
+//继承 public是访问限定符 A：基类/父类 B：子类/派生类
+//继承过来后还附带了作用域，base:: _pub_a  --->所以在派生类中取一样的名字是没有问题的，因为两个变量作用域不同
+class B:public A
+{
+public:
+	int _pub_b;
+protected:
+	int _pro_b;
+private:
+	int _pri_b;
+};
+int main()
+{
+	return 0;
+}
 ```
 ### 3.多态共有继承
 ```c++
