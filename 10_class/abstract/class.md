@@ -1701,6 +1701,103 @@ int main()
 	return 0;
 }
 ```
+### 9.虚析构函数
+```C++
+/*
+1.哪些函数不可以实现成虚函数
+a 虚函数能产生函数地址，存储在vftable中，依赖于对象存在
+b 对象---->vfptr--->vftable
+c 构造函数不能是虚函数：其作用在对象构造之前 构造函数(全部都是静态绑定)中调用虚函数也不会发生动态绑定
+d 析构函数可以 
+e static 静态成员方法也不能作为虚函数
+2.虚函数能用来干嘛，为什么会出现虚函数
+3.虚析构函数
+*/
+#include<iostream>
+#include<typeinfo>
+using namespace std;
+//什么时候必须把基类的析构函数实现成虚函数--基类的指针（引用）指向堆上的new出来的派生类对象的时候
+//此时他调用析构函数的时候，必须发生动态绑定，否则派生类的析构函数无法调用
+
+class base 
+{
+public:
+	base(int data = 10) :ma(data) { cout << "base()" << endl; }
+	virtual ~base() { cout << "~base()" << endl; }
+	
+	virtual void show() { cout << "base::show()" << endl; }
+	
+	//virtual void show(int) { cout << "base::show(int)" << endl; }
+protected:
+	int ma;
+};
+class derive :public base
+{
+public:
+	derive(int data = 20) :base(data), mb(data) { cout << "derive()" << endl; }
+	//基类的析构函数是虚函数，派生类的虚构函数自动成为虚函数
+	~derive() { cout << "~derive()" << endl; }
+	void show() { cout << "derive::show()" << endl; }
+	
+private:
+	int mb;
+};
+int main()
+{
+	/*derive d;
+	base* pb = &d;
+	pb->show();*/
+	base* pb = new derive(10);
+	pb->show();
+	//base()是虚函数，对于析构函数的调用就是动态绑定
+	delete pb;//只会调用~base()
+	return 0;
+}
+```
+### 10.动态绑定
+```C++
+/*
+
+
+*/
+#include<iostream>
+using namespace std;
+class base
+{
+public:
+	base(int data = 0) :ma(data) { cout << "base()" << endl; }
+	virtual void show() { cout << "base::show()" << endl; }
+	~base() { cout << "~base()" << endl; }
+protected:
+	int ma;
+};
+class derive:public base
+{
+public:
+	derive(int data = 0) :base(), mb(data) { cout << "derive()" << endl; }
+	void show() { cout << "derive::show()" << endl; }
+	~derive() { cout << "~derive()" << endl; }
+private:
+	int mb;
+};
+int main()
+{
+	base b;
+	derive d;
+	b.show();//静态绑定
+	d.show();//静态绑定
+	//必须由指针（引用）调用虚函数
+	base* pb = &b;
+	pb->show();//动态绑定
+	pb = &d;
+	pb->show();//动态绑定
+	base& rb1 = b;
+	rb1.show();//动态绑定
+	base& rb2 = d;
+	rb2.show();//动态绑定
+	return 0;
+}
+```
 ## 7.c++中的代码重用:
 ### 1.包含对象成员的类
 ```c++
