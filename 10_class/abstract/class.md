@@ -1645,6 +1645,62 @@ int main()
 ```c++
 
 ```
+### 8.重载 覆盖 隐藏
+```C++
+#include<iostream>
+#include<typeinfo>
+using namespace std;
+/*虚函数 静态绑定 动态绑定
+* 1.如果类里面定义了虚函数，那么编译阶段，编译器会给这个类类型产生唯一一个vftable虚函数表
+* 虚函数表中主要存储的内容就是RTTI（run time type information：运行时类型信息）指针和虚函数的地址
+* 当程序运行时，每一张虚函数表都会加载到内存的.rodata区（只读）
+* 2.一个类里面定义了虚函数，那么这个类实例化的对象，运行时，内存中会存放一个vfptr（虚函数指针），指向相应类型的虚函数表vftable
+* 一个类型定义的n个对象，其vfptr指向的都是同一张vftable
+* 3.一个类里面虚函数的个数，不影响对象内存大小，（因为只加了一个vfptr），影响的是虚函数表（vftable）的大小
+*/
+class base //基类
+{
+public:
+	base(int data =10):ma(data){}
+	//虚函数
+	virtual void show() { cout << "base::show()" << endl; }
+	//虚函数
+	virtual void show(int) { cout << "base::show(int)" << endl; }
+protected:
+	int ma;
+};
+class derive:public base
+{
+public:
+	derive(int data =20):base(data),mb(data){}
+	/*
+	* 4.如果派生类中的方法和基类继承来的某个方法 返回值 函数名 参数列表都相同
+	* 而且基类的方法是virtual函数，那么派生类的这个方法，自动处理成虚函数----覆盖？
+	* 覆盖指的是虚函数表中虚函数地址的覆盖
+	*/
+	void show() { cout << "derive::show()" << endl; }//被自动处理成虚函数 
+	//void show(int) { cout << "derive::show(int)" << endl; }
+private:
+	int mb;
+};
+int main()
+{
+	derive d(50);
+	base* pb = &d;
+	/*pb-> base类型 base::show 如果是普通函数，就进行静态绑定-> call base::show (0F71145h) 
+	pb-> base base::show -->virtual 如果是虚函数就进行动态绑定,运行时才知道ecx寄存器里的地址
+	*/
+	pb->show(); //静态（编译时期）的绑定（函数的调用）call base::show (0F71145h)
+	pb->show(10);// call base::show (0F71406h)
+	cout << sizeof(base) << endl;
+	cout << sizeof(derive) << endl;
+	cout << typeid(pb).name() << endl;
+	//pb--->base类型--->base有没有虚函数，如果没有，那么*pb识别的就是编译时期的类型*pb--base
+	//如果有虚函数 那么*pb识别的就是运行时期的类型(RTTI类型)*pb--derive
+	cout << typeid(*pb).name() << endl;
+	return 0;
+}
+```
 ## 7.c++中的代码重用:
 ### 1.包含对象成员的类
 ```c++
