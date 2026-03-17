@@ -1625,23 +1625,64 @@ int main()
 	return 0;
 }
 ```
-### 3.多态共有继承
+### 3.派生类的构造过程
+```C++
+#include<iostream>
+using namespace std;
+/*
+派生类的构造过程
+派生类怎么初始化从基类继承的成员变量：调用基类相应的构造函数
+1.派生类可以从基类继承来成员变量和成员方法，除过构造函数和析构函数
+2.派生类的构造函数和析构函数，负责初始化和清理派生类部分
+派生类从基类继承的成员的初始化和清理 由基类的构造和析构函数负责
+3.构造过程：
+1.派生类调用基类的构造函数，初始化从基类继承过来的成员
+2.调用派生类自己的构造函数，初始化派生类自己特有的成员
+。。。。。派生类作用域到期后
+3.调用派生类的析构函数，释放派生类成员可能占用的内存
+4.调用基类的析构函数，释放派生类继承的基类成员可能占用的内存
+*/
+
+
+class base
+{
+public:
+	base(int data) :ma(data) { cout << "base()" << endl; }
+	~base() { cout << "~base" << endl; }
+protected:
+	int ma;
+};
+class derive :public base
+{
+public:
+	derive(int data) :base(data), mb(data) { cout << "drive()" << endl; } //ma(data) X
+	~derive() { cout << "~derive()" << endl; }
+private:
+	int mb;
+};
+int main()
+{
+	derive d(20);
+	return 0;
+}
+```
+### 4.多态共有继承
 ```c++
 
 ```
-### 4.静态联编和动态联编
+### 5.静态联编和动态联编
 ```c++
 
 ```
-### 5.访问控制protected
+### 6.访问控制protected
 ```c++
 
 ```
-### 6.抽象基类
+### 7.抽象基类
 ```c++
 
 ```
-### 7.继承和动态内存分配
+### 8.继承和动态内存分配
 ```c++
 
 ```
