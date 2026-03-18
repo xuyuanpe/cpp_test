@@ -2387,7 +2387,66 @@ int main()
 ```
 ### 5.类型转换运算符
 ```c++
+#include<iostream>
+using namespace std;
+//C++语言级别提供的四种类型转换方式
+/*
+* 1.const_cast:去掉常量属性的类型转换
+* 2.static_cast：提供编译器认为安全的类型转换(转换的类型之间要有联系)
+* 3.reinterpret_cast：类似于c风格的强制类型转换
+* 4.dynami_cast：主要用于继承结构中，可以支持RTTI类型识别的转换
+*/
 
+class base
+{
+public:
+	virtual void func() = 0;
+};
+class derive1:public base
+{
+public:
+	void func() { cout << "call derive1::func()"<< endl; }
+};
+class derive2:public base
+{
+public:
+	void func() { cout << "call derive2::func()" << endl; }
+	void derive2_func() { cout << "call derive2::derive2_func()" << endl; }
+};
+void showfunc(base* p)//识别传入的p的类型是哪个派生类 typeid(*p).name()?
+{
+	//dynamic_cast<>会检查指针是否指向的是一个derive2类型的对象
+	//p->vfptr->vftable:RTTI 看类型是否为derive2
+	//是 ：返回转换类型成功后derive2的地址，否则返回nullptr
+	derive2* pd2 = dynamic_cast<derive2*>(p);//static_cast?这个是无论怎样都可以成功，全给转了，不能识别
+	if (pd2 != nullptr)
+	{
+		pd2->derive2_func();
+	}
+	else
+	{
+		p->func();//动态绑定
+	}
+	
+}
+int main()
+{
+	const int a = 10;
+	//int* p = (int *) & a;//----->char*p=(char*)&a  yes
+	//const_cast<里面必须是指针或者引用类型>
+	int* p = const_cast<int*>(&a);//类型要匹配 char*p=const_cast<char*>(&a) no
+	//===========================================================================================
+	//static_cast
+	int b = 10;
+	char c = static_cast<int>(a);
+	int* p2 = nullptr;
+	double* d = reinterpret_cast<double*>(p2);//不安全
+	derive1 d1;
+	derive2 d2;
+	showfunc(&d1);
+	showfunc(&d2);
+	return 0;
+}
 ```
 
 
