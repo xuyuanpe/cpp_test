@@ -123,7 +123,77 @@ int main()
 }
 ```
 ## 3.deque
+```C++
+#include<iostream>
+#include<deque>
+using namespace std;
+/*
+* deque--->双端队列容器--->底层数据结构是二维数组
+* deque<int>deq;
+* deq.push_back(20);后
+* deq.push_front(20);前
+* deq.insert(it,20);
+* deq.pop_back();末尾删除
+* deq.pop_front();头部删除
+* deq.erase(it);迭代器指向位置删除
+* 连续的insert/erase需要考虑迭代器失效问题
+* 
+* 
+*/
+int main()
+{
+
+}
+```
 ## 4.list
+```C++
+#include<iostream>
+#include<list>
+
+using namespace std;
+/*list 链表容器  底层数据结构 双向循环链表 pre data last
+* list<int>mylist;
+* mylist.push_back(20);后
+* mylist.push_front(20);前
+* mylist.insert(it,20); //插入之前先进行query查询操作
+* mylist.pop_back();末尾删除
+* mylist.pop_front();头部删除
+* mylist.erase(it);迭代器指向位置删除
+* 连续的insert/erase需要考虑迭代器失效问题
+*/
+int main()
+{
+	return 0;
+}
+```
+### 顺序容器总结
+```C++
+#include<iostream>
+#include<deque>
+#include<list>
+#include<vector>
+using namespace std;
+/*纵向：各个容器的掌握程度
+* 横向：各个容器之间的区别
+* vector list deque
+* 1.vector -->底层是动态开辟的数组 内存是连续的 2倍扩容 
+* 默认定义的vector<int> vec;-->此时还没有开辟空间 push_back\insert 0-1-2-4-8-扩容 使用reserve预留空间
+* 2.deque -->底层是动态开辟的二维数组 第二维是固定长度的数组空间 扩容是一维以二倍变化 deque 内存并不是连续的 第二维是单独new出来的
+* 也可以说是每一个二维是连续的
+* 3.vector和deque之间的区别：
+* a.底层数据结构不一样
+* b.插入删除元素复杂度
+* c.内存使用效率
+* d.插入和删除元素的效率 前中后 是否移动元素 内存完全连续的挪动比较方变
+* 4.list：双向循环链表
+* 
+* 
+*/
+int main()
+{
+	return 0;
+} 
+```
 ## 5.容器适配器
 ## 6.无序关联容器
 ## 7.有序关联容器
