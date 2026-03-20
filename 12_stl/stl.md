@@ -669,3 +669,69 @@ int main()
 }
 ```
 ## 10.泛型算法和绑定器
+```C++
+#include<iostream>
+#include<algorithm>
+#include<vector>
+#include<functional>
+using namespace std;
+/*
+*  泛型算法：template + iterator
+sort find find_if binary_search for_each
+* 1.泛型算法的参数接收的都是迭代器
+* 2.泛型算法的参数还可以接收函数对象
+* 3.绑定器：+ 二元函数对象 = 一元函数对象
+*       bind1st：把二元函数的第一个形参绑定起来
+*       bind2st：把二元函数的第二个形参绑定起来
+* 
+* 
+*/
+int main()
+{
+	int arr[] = { 12,4,78,9,21,43,56,52,42,31 };
+	vector<int>vec(arr, arr + sizeof(arr) / sizeof(arr[0]));
+	for (int v : vec)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "-------------------------------" << endl;
+	//sort(vec.begin(), vec.end());
+	//greater<int>tmp;
+	sort(vec.begin(), vec.end(), greater<int>());//传入函数对象
+	for (int v : vec)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "-------------------------------" << endl;
+	sort(vec.begin(), vec.end());
+	for (int v : vec)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "-------------------------------" << endl;
+	if (binary_search(vec.begin(), vec.end(), 21))
+	{
+		cout << "21" << endl;
+	}
+	auto it1 = find(vec.begin(), vec.end(), 21);
+	if (it1 != vec.end())
+	{
+		cout << "21" << endl;
+	}
+	//find_if 按条件进行搜索 需要的是一个一元函数对象
+	//把48 按顺序插入容器中
+	//greater a>b less a<b
+	auto it2 = find_if(vec.begin(), vec.end(), bind1st(less<int>(),48));
+	vec.insert(it2, 48);
+	for (int v : vec)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "-------------------------------" << endl;
+	return 0;
+}
+```
