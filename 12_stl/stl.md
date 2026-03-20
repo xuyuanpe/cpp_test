@@ -446,6 +446,120 @@ int main()
 
 ```
 ## 7.有序关联容器
+```C++
+#include<iostream>
+#include<string>
+#include<map>
+#include<set>
+using namespace std;
+/*
+有序关联容器----->底层数据结构是红黑树
+
+
+*/
+class student
+{
+public:
+	student(int id=0,string name="") :_id(id), _name(name) {}//map需要自定义对象的默认构造函数
+	bool operator<(const student& stu)const
+	{
+		return _id < stu._id;
+	}
+private:
+	int _id;
+	string _name;
+	friend ostream& operator<<(ostream& out, const student& stu);
+};
+ostream& operator<<(ostream & out, const student & stu)
+{
+	out << "id: " << stu._id <<" " << "name: " << stu._name << endl;
+	return out;
+}
+using namespace std;
+int main()
+{
+#if 0
+	set<int>set1;
+	for (int i = 0; i < 20; ++i)
+	{
+		set1.insert(rand() % 20 + 1);
+
+	}
+	for (auto v : set1)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "==============================================================" << endl;
+	//在有序容器中放入自定义类型数据  自定义数据类型如何比较大小和排序 提供默认的小于运算符的重载函数
+	set<student>stu1;
+	stu1.insert(student(1000, "a"));
+	stu1.insert(student(1001, "b"));
+	for (auto it = stu1.begin(); it != stu1.end(); ++it)
+	{
+		cout << *it << endl;;
+	}
+	cout << endl;
+#endif
+	map<int, student>stumap;
+	stumap.insert({ 1000, student(1000, "aaa") });
+	stumap.insert({ 1001, student(1001, "bbb") });
+	stumap.insert({ 1002, student(1002, "ccc") });
+	//stumap.erase(1000);
+	cout << stumap[1000] << endl;
+	for (auto it = stumap.begin(); it != stumap.end(); ++it)
+	{
+		cout << "key: " << it->first << " " << "value: " << it->second << endl;
+	}
+	return 0;
+}
+```
 ## 8.迭代器iterator
+```C++
+#include<iostream>
+#include<vector>
+using namespace std;
+/*
+* 1.正向迭代器(iterator)不仅可以读取元素，也可以修改 删除
+* 2.常量正向迭代器（const_iterator）: 只读
+* 3.reverse_iterator :反向迭代器
+* 4.常量反向迭代器 const reverse_iterator
+*/
+int main(int* argc, char* argv[])
+{
+	vector<int> vec;
+	for (int i = 0; i < 20; ++i)
+	{
+		vec.push_back(rand() % 100);
+	}
+	vector<int>::iterator it = vec.begin();//auto it =vec.begin();
+	for (; it != vec.end(); ++it)
+	{
+		cout << *it << " ";
+		if (*it % 2 == 0)
+		{
+			*it = 0;
+		}
+
+	}
+	cout << endl;
+	cout << "----------------------------------------------------------" << endl;
+	for (int v : vec)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "----------------------------------------------------------" << endl;
+	vector<int>::reverse_iterator rit = vec.rbegin();//rbegin()---最后一个元素位置    rend（）第一个元素的前驱
+	for (; rit != vec.rend(); ++rit)
+	{
+		cout << *rit << " ";
+	}
+	cout << endl;
+	cout << "----------------------------------------------------------" << endl;
+	return 0;
+}
+
+```
 ## 9.函数对象
 ## 10.泛型算法和绑定器
