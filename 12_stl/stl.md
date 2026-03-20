@@ -562,4 +562,64 @@ int main(int* argc, char* argv[])
 
 ```
 ## 9.函数对象
+```C++
+#include<iostream>
+#include<string>
+using namespace std;
+/*
+* 函数对象：----->c 函数指针
+* operator()----函数对象/仿函数
+*/
+//函数对象的实现
+//还可以添加相关成员变量信息，记录函数对象使用时的更多信息
+template<typename T>
+class mygreater
+{
+public:
+	bool operator()(T a, T b)
+	{
+		return a > b;
+	}
+};
+template<typename T>
+class myless
+{
+public:
+	bool operator()(T a, T b)
+	{
+		return a < b;
+	}
+};
+//使用c函数指针
+template<typename T>
+bool my_greater(T a, T b)//参数个数2 --》二元函数对象
+{
+	return a > b;
+}
+template<typename T>
+bool my_less(T a, T b)
+{
+	return a < b;
+}
+//c++库函数模板
+template<typename T, typename Compare>
+bool compare(T a, T b,Compare comp)
+{
+	return comp(a,b);//通过函数指针调用函数是无法内联的，而且有函数调用开销
+}
+
+
+
+int main()
+{
+	cout << compare(10,20,my_greater<int>) << endl;
+	cout << compare('a','y',my_less<char>) << endl;
+	cout << compare(10, 20, mygreater<int>()) << endl;//调用的是对象operator()，可以内联
+	cout << compare('a', 'y', myless<char>()) << endl;
+	return 0;
+}
+```
+```C++
+
+```
 ## 10.泛型算法和绑定器
