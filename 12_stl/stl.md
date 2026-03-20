@@ -620,6 +620,52 @@ int main()
 }
 ```
 ```C++
+#include<iostream>
+#include<queue>
+#include<set>
+#include<vector>
+using namespace std;
+int main()
+{
+	priority_queue<int> que;
+	for (int i = 0; i < 10; ++i)
+	{
+		que.push(rand() % 100);
+	}
+	while (!que.empty())
+	{
+		cout << que.top() << " ";
+		que.pop();
+	}
+	cout << endl;
+	cout << "=========================================================" << endl;
 
+	using MinHeap = priority_queue<int, vector<int>, greater<int>>;//小根堆
+	MinHeap que2;
+	for (int i = 0; i < 10; ++i)
+	{
+		que2.push(rand() % 100);
+	}
+	while (!que2.empty())
+	{
+		cout << que2.top() << " ";
+		que2.pop();
+	}
+	cout << endl;
+	cout << "=========================================================" << endl;
+	set<int, greater<int>> set;
+	for (int i = 0; i < 10; ++i)
+	{
+		set.insert(rand() % 100);
+	}
+	for (int v : set)
+	{
+		cout << v << " ";
+	}
+	cout << endl;
+	cout << "=========================================================" << endl;
+	
+	return 0;
+}
 ```
 ## 10.泛型算法和绑定器
