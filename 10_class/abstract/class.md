@@ -2450,3 +2450,272 @@ int main()
 ```
 
 
+## 9.对象的应用优化，右值引用的优化
+```C++
+#include<iostream>
+using namespace std;
+class Test
+{
+public:
+	Test(int a = 10) :ma(a) { cout << "call Test()" << endl; }
+	~Test() { cout << "call ~Test()" << endl; }
+	Test(const Test& other) :ma(other.ma) { cout << "call Test(const Test&)" << endl; }
+	Test& operator=(const Test& other)
+	{
+		cout << "call operator=()" << endl;
+		ma = other.ma;
+		return *this;
+	}
+private:
+	int ma;
+};
+int main(int* argc, char* argv[])
+{
+	Test t1;
+	cout << "------------------------------------" << endl;
+	Test t2(t1);//拷贝构造函数
+	cout << "------------------------------------" << endl;
+	Test t3 = t1;//拷贝构造函数---t3正在定义
+	cout << "------------------------------------" << endl;
+	Test t4 = Test(20);//显式生成临时对象（生存周期就是所在语句） 再拷贝构造？ 
+	cout << "------------------------------------" << endl;
+	/*
+	call Test()----Test t1;
+	------------------------------------
+	call Test(const Test&)----Test t2(t1);
+	------------------------------------
+	call Test(const Test&)----Test t3 = t1;
+	------------------------------------
+	call Test()----Test t4 = Test(20);/Test(20);编译器对于对象构造的优化，
+	用临时对象生成新对象的时候临时对象不产生，直接构造新对象
+	------------------------------------
+	call ~Test()
+	call ~Test()
+	call ~Test()
+	call ~Test()
+	*/
+	t4 = t2;//赋值重载函数
+	cout << "------------------------------------" << endl;
+	t4 = Test(30);//构造临时对象+赋值重载函数
+	cout << "------------------------------------" << endl;
+	t4 = (Test)30;//int->Test类型强制转换---Test()有合适的构造函数 显式
+	cout << "------------------------------------" << endl;
+	t4 = 30;//int->Test(int) 隐式
+	cout << "------------------------------------" << endl;
+	//Test* p = &Test(40);//出语句后p指向的是一个已经析构的临时对象 会出现野指针
+	cout << "------------------------------------" << endl;
+	//引用-别名 临时对象出了语句就析构，因为没有名字，这会儿用引用相当于给了个名字，这个对象不会出这个语句就被析构
+	const Test& t5 = Test(50);
+	cout << "------------------------------------" << endl;
+	cout << "------------------------------------" << endl;
+	cout << "------------------------------------" << endl;
+	return 0;
+}
+```
+```C++
+#include<iostream>
+using namespace std;
+class Test
+{
+public:
+	Test(int a = 5, int b = 5) :ma(a), mb(b) { cout << "Test(int,int)" << endl; }
+	~Test() { cout << "~Test()" <<endl; }
+	Test(const Test& other) :ma(other.ma), mb(other.mb) { cout << "Test(const Test&)" << endl; }
+	void operator=(const Test& other)
+	{
+		ma = other.ma;
+		ma = other.mb;
+		cout << "operator=()" << endl;
+	}
+private:
+	int ma;
+	int mb;
+};
+Test t1(10, 10);
+int main(int* argc, char* argv[])
+{
+	
+	cout << "------------------------------------1" << endl;
+	Test t2(20, 20);
+	cout << "------------------------------------2" << endl;
+	Test t3 = t2;
+	cout << "------------------------------------3" << endl;
+	static Test t4 = Test(30, 30);//存在，但是静态局部变量的初始化是在第一次运行的时候 临时对象被优化掉
+	cout << "------------------------------------4" << endl;
+	t2 = Test(40, 40);
+	cout << "------------------------------------5" << endl;
+	t2 = (Test)(50, 50);
+	cout << "------------------------------------6" << endl;
+	t2 = 60;
+	cout << "------------------------------------7" << endl;
+	Test* p1 = new Test(70, 70);
+	cout << "------------------------------------8" << endl;
+	Test* p2 = new Test[2];
+	cout << "------------------------------------9" << endl;
+	//Test* p3 = &Test(80, 80);
+	cout << "------------------------------------10" << endl;
+	const Test& p4 = Test(90, 90);
+	cout << "------------------------------------11" << endl; 
+	delete p1;
+	cout << "------------------------------------12" << endl;
+	delete[]p2;
+	cout << "------------------------------------13" << endl;
+	return 0;
+}
+Test t5(100, 100);
+/*
+		Test(int,int)
+		Test(int,int)   //全局变量t1和t5先构造
+		------------------------------------1
+		Test(int,int)
+		------------------------------------2
+		Test(const Test&)
+		------------------------------------3
+		Test(int,int)
+		------------------------------------4
+		Test(int,int)
+		operator=()
+		~Test()
+		------------------------------------5
+		Test(int,int)
+		operator=()
+		~Test()
+		------------------------------------6
+		Test(int,int)
+		operator=()
+		~Test()
+		------------------------------------7
+		Test(int,int)
+		------------------------------------8
+		Test(int,int)
+		Test(int,int)
+		------------------------------------9
+		------------------------------------10
+		Test(int,int)
+		------------------------------------11
+		~Test()
+		------------------------------------12
+		~Test()
+		~Test()
+		------------------------------------13
+		~Test()
+		~Test()
+		~Test()
+		~Test()
+		~Test()
+*/
+```
+```C++
+#include<iostream>
+using namespace std;
+class Test
+{
+public:
+	Test(int data = 10) :ma(data) { cout << "Test(int)" << endl; }
+	~Test() { cout << "~Test" << endl; }
+	Test(const Test& other) :ma(other.ma) { cout << "Test(const Test&)" << endl; }
+	void operator=(const Test& other)
+	{
+		ma = other.ma;
+		cout << "operator=(const Test&)" << endl;
+	}
+	int getdata()const { return ma; }
+private:
+	int ma;
+};
+Test getobject(Test t)//函数实参到形参是初始化，会发生拷贝构造
+{
+	//int val = t.getdata();
+	//Test tmp(val);//构造
+	////函数运行完，这个局部对象就没了 不能返回局部对象的指针或者引用，避免通过这个指针或者引用访问已经释放的内存
+	//return tmp;//函数完成，tmp是局部对象，要把tmp带出来，需要在main函数栈帧上构造一个临时对象
+	return Test(t.getdata());
+}
+int main()
+{
+	Test t1;
+	Test t2;
+	cout << "--------------------------------1" << endl;
+	t2 = getobject(t1);//函数实参到形参是初始化，会发生拷贝赋值
+	cout << "--------------------------------2" << endl;
+
+	return 0;
+}
+
+/*
+		Test(int)
+		Test(int)
+		--------------------------------1
+		Test(const Test&)
+		Test(int)
+		~Test
+		operator=(const Test&)
+		~Test
+		编译器发现函数直接返回局部对象tmp，
+		会直接在主函数的目标地址（临时对象）构造tmp，
+		省略了拷贝构造，所以没有打印Test(const Test&)。
+		--------------------------------2
+		~Test
+		~Test
+*/
+```
+```C++
+#include<iostream>
+using namespace std;
+/*
+* 1.函数实参到形参传递过程中，对象优先使用引用传递，不要按值传递
+* 2.函数返回对象时，应该优先返回一个临时对象，不要返回一个临时对象
+* 3.接收返回值是对象的函数调用时，优先按照初始化的方式接收，不要按赋值的方式接收
+*/
+class Test
+{
+public:
+	Test(int data = 10) :ma(data) { cout << "Test(int)" << endl; }
+	~Test() { cout << "~Test" << endl; }
+	Test(const Test& other) :ma(other.ma) { cout << "Test(const Test&)" << endl; }
+	void operator=(const Test& other)
+	{
+		ma = other.ma;
+		cout << "operator=(const Test&)" << endl;
+	}
+	int getdata()const { return ma; }
+private:
+	int ma;
+};
+Test getobject(Test& t)//函数实参到形参是初始化，会发生拷贝构造-而使用引用传递会减少拷贝构造和析构的过程
+{
+	//int val = t.getdata();
+	//Test tmp(val);//构造
+	////函数运行完，这个局部对象就没了 不能返回局部对象的指针或者引用，避免通过这个指针或者引用访问已经释放的内存
+	//return tmp;//函数完成，tmp是局部对象，要把tmp带出来，需要在main函数栈帧上构造一个临时对象
+	return Test(t.getdata());//返回临时对象，省去在main栈帧上构造临时对象的过程
+}
+int main()
+{
+	//Test t1;
+	//Test t2 ;
+	//cout << "--------------------------------1" << endl;
+	//t2 = getobject(t1);//函数实参到形参是初始化，会发生拷贝赋值
+	//cout << "--------------------------------2" << endl;
+	Test t1;
+	Test t2=getobject(t1);//这里t2是初始化，临时对象直接在main函数栈帧上产生
+	//临时对象拷贝构造新对象，会被优化成直接构造t2
+	cout << "--------------------------------1" << endl;
+	//函数实参到形参是初始化，会发生拷贝赋值
+	cout << "--------------------------------2" << endl;
+
+	return 0;
+}
+
+/*
+		Test(int)
+		Test(int)
+		--------------------------------1
+		Test(int)
+		operator=(const Test&)
+		~Test
+		--------------------------------2
+		~Test
+		~Test
+*/
+```
